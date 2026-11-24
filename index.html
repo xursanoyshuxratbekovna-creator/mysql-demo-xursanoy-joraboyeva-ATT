@@ -322,7 +322,7 @@ function renderNotes() {
   const listEl = document.getElementById("notesList");
   const searchEl = document.getElementById("searchInput");
   const query = (searchEl ? searchEl.value : "").trim().toLowerCase();
-[24/11/2026 19:29] Jo'raboyeva Xursanoy ATT: const filtered = query
+  const filtered = query
     ? allNotes.filter(function (item) {
         return ((item && item.name) || "").toLowerCase().indexOf(query) !== -1;
       })
