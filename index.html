@@ -1,4 +1,4 @@
-Jo'raboyeva Xursanoy ATT:[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: <!DOCTYPE html>
+Jo'raboyeva Xursanoy ATT: <!DOCTYPE html>
 <html lang="uz">
 <head>
   <meta charset="utf-8">
@@ -160,7 +160,7 @@ Jo'raboyeva Xursanoy ATT:[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: <!DOCTYPE 
       border-color: #ff7597;
       box-shadow: 0 0 0 3px rgba(255, 117, 151, 0.22);
     }
-[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: .save-btn {
+[24/11/2026 19:29] Jo'raboyeva Xursanoy ATT: .save-btn {
       background: #ff7597;
       color: #ffffff;
       border: none;
@@ -271,8 +271,8 @@ Jo'raboyeva Xursanoy ATT:[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: <!DOCTYPE 
         <span>Atirgul Doska</span>
       </div>
       <div class="top-actions">
-        <button class="btn-primary" type="button" onclick="focusInput()">+<br>Yangi Xabar</button>
-        <button class="btn-secondary" type="button" onclick="resetFilter()">Barcha<br>xabarlar</button>
+        <button class="btn-primary" id="newNoteBtn" type="button">+<br>Yangi Xabar</button>
+        <button class="btn-secondary" id="allNotesBtn" type="button">Barcha<br>xabarlar</button>
       </div>
     </header>
 
@@ -283,16 +283,14 @@ Jo'raboyeva Xursanoy ATT:[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: <!DOCTYPE 
         class="note-input"
         placeholder="salom"
         maxlength="100"
-        onkeypress="if(event.key==='Enter') addNote()"
       >
-      <button class="save-btn" id="saveBtn" type="button" onclick="addNote()">Saqlash</button>
+      <button class="save-btn" id="saveBtn" type="button">Saqlash</button>
     </section>
 
     <input
       id="searchInput"
       class="search-box"
       placeholder="Xabarlar ichidan qidirish..."
-      oninput="renderNotes()"
     >
 
     <main class="notes-list" id="notesList">
@@ -304,35 +302,30 @@ Jo'raboyeva Xursanoy ATT:[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: <!DOCTYPE 
 const API = "/.netlify/functions/api";
 let allNotes = [];
 
-function focusInput() {
-  const input = document.getElementById("nameInput");
-  input.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => input.focus(), 200);
-}
-
-function resetFilter() {
-  document.getElementById("searchInput").value = "";
-  renderNotes();
+function pad2(num) {
+  return num < 10 ? "0" + num : String(num);
 }
 
 function formatDateTime(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return "";
-  const dd = String(d.getDate()).padStart(2, "0");
-[24/11/2026 19:26] Jo'raboyeva Xursanoy ATT: const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = pad2(d.getDate());
+  const mm = pad2(d.getMonth() + 1);
   const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return ${dd}/${mm}/${yyyy}, ${hh}:${min}:${ss};
+  const hh = pad2(d.getHours());
+  const min = pad2(d.getMinutes());
+  const ss = pad2(d.getSeconds());
+  return dd + "/" + mm + "/" + yyyy + ", " + hh + ":" + min + ":" + ss;
 }
 
 function renderNotes() {
   const listEl = document.getElementById("notesList");
-  const query = document.getElementById("searchInput").value.trim().toLowerCase();
-
-  const filtered = query
-    ? allNotes.filter(item => (item.name || "").toLowerCase().includes(query))
+  const searchEl = document.getElementById("searchInput");
+  const query = (searchEl ? searchEl.value : "").trim().toLowerCase();
+[24/11/2026 19:29] Jo'raboyeva Xursanoy ATT: const filtered = query
+    ? allNotes.filter(function (item) {
+        return ((item && item.name) || "").toLowerCase().indexOf(query) !== -1;
+      })
     : allNotes;
 
   if (!filtered.length) {
@@ -341,13 +334,13 @@ function renderNotes() {
   }
 
   listEl.innerHTML = "";
-  filtered.forEach(item => {
+  filtered.forEach(function (item) {
     const card = document.createElement("article");
     card.className = "note-item";
 
     const title = document.createElement("div");
     title.className = "note-title";
-    title.textContent = + ${item.name};
+    title.textContent = "+ " + (item.name || "");
 
     const timeRow = document.createElement("div");
     timeRow.className = "note-time";
@@ -372,10 +365,12 @@ async function loadNotes() {
   try {
     const res = await fetch(API);
     const rows = await res.json();
-    if (!Array.isArray(rows)) throw new Error("Response is not an array");
+    if (!Array.isArray(rows)) {
+      throw new Error("Invalid response");
+    }
     allNotes = rows;
     renderNotes();
-  } catch (e) {
+  } catch (err) {
     listEl.innerHTML = '<div class="empty-msg">Ma\'lumotlarni yuklashda xatolik yuz berdi.</div>';
   }
 }
@@ -402,6 +397,29 @@ async function addNote() {
     btn.textContent = "Saqlash";
   }
 }
+
+document.getElementById("saveBtn").addEventListener("click", addNote);
+
+document.getElementById("nameInput").addEventListener("keydown", function (event) {
+  if (event.key === "Enter") {
+    addNote();
+  }
+});
+
+document.getElementById("searchInput").addEventListener("input", renderNotes);
+
+document.getElementById("newNoteBtn").addEventListener("click", function () {
+  const input = document.getElementById("nameInput");
+  input.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(function () {
+    input.focus();
+  }, 200);
+});
+
+document.getElementById("allNotesBtn").addEventListener("click", function () {
+  document.getElementById("searchInput").value = "";
+  renderNotes();
+});
 
 loadNotes();
 </script>
